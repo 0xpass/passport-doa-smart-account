@@ -1,23 +1,29 @@
 "use client";
 import { useState } from "react";
-import { createPassportClient } from "@0xpass/passport-viem";
 import { http } from "viem";
-import { mainnet } from "viem/chains";
 import { usePassport } from "./hooks/usePassport";
+import { SignUpButton, useAuth } from "@clerk/nextjs";
+import { Network } from "@0xpass/passport";
 
-export default function Page() {
-  const [username, setUsername] = useState("");
+export default function Home() {
   const [authenticated, setAuthenticated] = useState(false);
-  const [authenticating, setAuthenticating] = useState(false);
-  const [registering, setRegistering] = useState(false);
-  const [authenticateSetup, setAuthenticateSetup] = useState(false);
-  const [signMessageLoading, setSignMessageLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [messageSignature, setMessageSignature] = useState("");
-  const [authenticatedHeader, setAuthenticatedHeader] = useState({});
-  const [address, setAddress] = useState<string>();
+  const [username, setUsername] = useState("");
+  const { isSignedIn } = useAuth();
 
-  const alchemyUrl = process.env.NEXT_PUBLIC_ALCHEMY_URL!;
+  const network =
+    process.env.NEXT_PUBLIC_NODE_ENV === "production"
+      ? Network.DEVNET
+      : Network.LOCAL;
+  const scopeId = process.env.NEXT_PUBLIC_SCOPE_ID;
+  const alchemyUrl = process.env.NEXT_PUBLIC_ALCHEMY_URL;
+
+  const { passport } = usePassport({
+    scopeId: scopeId!,
+    network: network,
+  });
+
+  const [authenticatedHeader, setAuthenticatedHeader] = useState({});
+  const [address, setAddress] = useState("");
   const fallbackProvider = http(alchemyUrl);
 
   const userInput = {
@@ -25,162 +31,145 @@ export default function Page() {
     userDisplayName: username,
   };
 
-  const { passport } = usePassport("07907e39-63c6-4b0b-bca8-377d26445172");
-
-  async function register() {
-    setRegistering(true);
-    try {
-      await passport.setupEncryption();
-      const res = await passport.register(userInput);
-      console.log(res);
-
-      if (res.result.account_id) {
-        setRegistering(false);
-        setAuthenticating(true);
-        await authenticate();
-        setAuthenticating(false);
-      }
-    } catch (error) {
-      console.error("Error registering:", error);
-    } finally {
-      setRegistering(false);
-      setAuthenticating(false);
-    }
-  }
-
   async function authenticate() {
-    setAuthenticating(true);
     try {
       await passport.setupEncryption();
       const [authenticatedHeader, address] = await passport.authenticate(
         userInput
-      )!;
+      );
       setAuthenticatedHeader(authenticatedHeader);
-      console.log(address);
       setAddress(address);
       setAuthenticated(true);
     } catch (error) {
       console.error("Error registering:", error);
-    } finally {
-      setAuthenticating(false);
-    }
-  }
-
-  async function createWalletClient() {
-    return await createPassportClient(
-      authenticatedHeader,
-      fallbackProvider,
-      mainnet
-    );
-  }
-
-  async function signMessage(message: string) {
-    try {
-      setSignMessageLoading(true);
-      const client = await createWalletClient();
-      const [address] = await client.getAddresses();
-      const response = await client.signMessage({
-        account: address,
-        message,
-      });
-
-      setMessageSignature(response);
-      setSignMessageLoading(false);
-    } catch (error) {
-      console.error(error);
     }
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-white text-black">
-      <div
-        className={`text-2xl font-bold mb-8 ${
-          authenticated ? "text-green-500" : "text-red-500"
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-200">
+      <p
+        className={`font-bold text-2xl p-4 ${
+          isSignedIn ? "text-green-500" : "text-red-500"
         }`}
       >
-        {authenticated ? "Authenticated" : "Not authenticated"}
-      </div>
-      <div className="text-center">
-        <h1 className="text-3xl font-bold underline">
-          Passport Protocol Quickstart
-        </h1>
-        <p className="mt-2 text-lg">
-          This is a quickstart guide for the Passport Protocol SDK.
-        </p>
+        Status: {isSignedIn ? "Authenticated" : "Not authenticated"}
+      </p>
 
-        <div className="flex flex-col mt-4 space-y-4">
-          {authenticated ? (
-            <>
-              <div className="flex flex-col space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="font-bold">Address</div>
-                  <div>{address}</div>
-                </div>
-              </div>
-
-              {messageSignature && (
-                <div className="flex flex-col space-y-4 max-w-[60ch] break-words">
-                  <div className="font-bold">Message Signature</div>
-                  <div>{messageSignature}</div>
-                </div>
-              )}
-
-              <input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="border border-1 rounded p-2 border-black mb-4 ml-2 text-center"
-                placeholder="Message to sign"
-              />
-              <button
-                onClick={async () => await signMessage(message)}
-                disabled={signMessageLoading}
-                className="border border-1 rounded p-2 border-black mb-4 ml-2"
-              >
-                {signMessageLoading ? "Signing..." : "Sign Message"}
-              </button>
-            </>
-          ) : (
-            <div className="mb-12 flex flex-col space-y-2 mt-8">
-              <input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="border border-1 rounded p-2 border-black mb-4 ml-2 text-center"
-                placeholder="Enter unique username"
-              />
-              <button
-                className="border border-1 rounded p-2 border-black mb-4 ml-2"
-                onClick={async () => {
-                  if (authenticateSetup) {
-                    await authenticate();
-                  } else {
-                    await register();
-                  }
-                }}
-                disabled={registering || authenticating}
-              >
-                {authenticateSetup
-                  ? authenticating
-                    ? "Authenticating..."
-                    : "Authenticate"
-                  : registering
-                  ? "Registering..."
-                  : authenticating
-                  ? "Authenticating..."
-                  : "Register"}
-              </button>
-
-              <span
-                onClick={() => setAuthenticateSetup(!authenticateSetup)}
-                className="cursor-pointer"
-              >
-                {authenticateSetup
-                  ? "Register a Passkey?"
-                  : "Already have a passkey?"}
-              </span>
-            </div>
-          )}
+      <main className="flex flex-col items-center justify-center p-8 bg-gray-100 shadow-md rounded-lg space-y-8">
+        <h2 className="font-bold italic text-2xl text-gray-900">Sign In</h2>
+        <div className="space-y-4 flex flex-col w-full max-w-xs">
+          <SignUpButton
+            mode="modal"
+            afterSignInUrl="/auth/callback"
+            afterSignUpUrl="/auth/callback"
+          >
+            <button className="border border-1 rounded p-2 border-gray-400 w-full  text-gray-900">
+              Sign Up / In With Clerk
+            </button>
+          </SignUpButton>
         </div>
-      </div>
+        <div className="w-full max-w-xs">
+          <h2 className="font-bold italic text-2xl py-4 text-gray-900">
+            Methods
+          </h2>
+          <div className="space-y-4">
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch("/api/get-account", {
+                    method: "GET",
+                  });
+
+                  if (response.ok) {
+                    const addresses = await response.json();
+                    alert(addresses.result[0]);
+                  }
+                } catch (error) {
+                  alert(error);
+                }
+              }}
+              className="border border-1 rounded p-2 border-gray-400 w-full  text-gray-900"
+            >
+              Get Address
+            </button>
+
+            <button
+              className="border border-1 rounded p-2 border-gray-400 w-full  text-gray-900"
+              onClick={async () => {
+                try {
+                  const transaction = {
+                    from: "0x078352189fEDC08a20A904C7effB2bE7438f901e",
+                    nonce: "1",
+                    gasPrice: "0x9184E72A000", // Example: 1 Gwei in hex
+                    to: "0xb89FF4E9AD6B33F69153fa710F9849f51712eEc4",
+                    gas: "0x7530", // 30,000
+                    value: "0x2386F26FC10000", // 0.01 ETH in Wei
+                    chainId: "0x5", // Goerli's chain ID
+                    type: "0x00",
+                  };
+
+                  const res = await fetch("/api/sign", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      type: "transaction",
+                      data: transaction,
+                    }),
+                  });
+                  console.log("rest", res);
+                  alert(JSON.stringify(res));
+                } catch (e) {
+                  alert(e);
+                }
+              }}
+            >
+              Sign Transaction
+            </button>
+            <button
+              className="border border-1 rounded p-2 border-gray-400 w-full  text-gray-900"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/sign", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      type: "message",
+                      data: "hello world!",
+                    }),
+                  });
+                  alert(JSON.stringify(res));
+                } catch (e) {
+                  alert(e);
+                }
+              }}
+            >
+              Sign Message
+            </button>
+            <button
+              className="border border-1 rounded p-2 border-gray-400 w-full  text-gray-900"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/get-smart-account", {
+                    method: "GET",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  });
+                  alert(JSON.stringify(res));
+                } catch (e) {
+                  alert(e);
+                }
+              }}
+            >
+              Get Smart Account
+            </button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

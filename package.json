@@ -9,21 +9,35 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@0xpass/passport": "2.1.5",
-    "@0xpass/passport-viem": "2.0.1",
-    "@0xpass/webauthn-signer": "2.0.0",
-    "next": "14.1.0",
-    "react": "^18",
-    "react-dom": "^18",
-    "viem": "2.9.4"
+    "@0xpass/connector": "latest",
+    "@0xpass/key-signer": "latest",
+    "@0xpass/passport": "latest",
+    "@0xpass/passport-viem": "latest",
+    "@0xpass/passport-viem-alchemy": "^0.0.1",
+    "@0xpass/webauthn-signer": "latest",
+    "@alchemy/aa-core": "^3.18.2",
+    "@alchemy/aa-signers": "^3.18.2",
+    "@clerk/nextjs": "^4.29.10",
+    "@clerk/themes": "^1.7.11",
+    "@react-oauth/google": "^0.11.1",
+    "@tanstack/react-query": "^5.35.1",
+    "@wagmi/core": "^2.9.4",
+    "axios": "latest",
+    "next": "latest",
+    "permissionless": "^0.1.22",
+    "react": "latest",
+    "react-dom": "latest",
+    "viem": "^2.9.4",
+    "wagmi": "^2.8.4"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "autoprefixer": "^10.0.1",
-    "postcss": "^8",
-    "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "@types/node": "latest",
+    "@types/prop-types": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "autoprefixer": "latest",
+    "postcss": "latest",
+    "tailwindcss": "latest",
+    "typescript": "latest"
   }
 }

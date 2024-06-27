@@ -1,8 +1,19 @@
 import { useRef } from "react";
 import { WebauthnSigner } from "@0xpass/webauthn-signer";
-import { Network, Passport } from "@0xpass/passport";
+import { Passport, Network } from "@0xpass/passport";
 
-export function usePassport(scopeId: string) {
+interface PassportAuthProps {
+  scopeId: string;
+  network?: Network;
+}
+
+export function usePassport({
+  scopeId,
+  network = Network.TESTNET,
+}: PassportAuthProps): {
+  passport: Passport;
+  signer: WebauthnSigner;
+} {
   const signerRef = useRef<WebauthnSigner | null>(null);
   const passportRef = useRef<Passport | null>(null);
 
