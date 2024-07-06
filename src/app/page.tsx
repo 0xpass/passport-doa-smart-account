@@ -1,49 +1,8 @@
 "use client";
-import { useState } from "react";
-import { http } from "viem";
-import { usePassport } from "./hooks/usePassport";
 import { SignUpButton, useAuth } from "@clerk/nextjs";
-import { Network } from "@0xpass/passport";
 
 export default function Home() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [username, setUsername] = useState("");
   const { isSignedIn } = useAuth();
-
-  const network =
-    process.env.NEXT_PUBLIC_NODE_ENV === "production"
-      ? Network.DEVNET
-      : Network.LOCAL;
-  const scopeId = process.env.NEXT_PUBLIC_SCOPE_ID;
-  const alchemyUrl = process.env.NEXT_PUBLIC_ALCHEMY_URL;
-
-  const { passport } = usePassport({
-    scopeId: scopeId!,
-    network: network,
-  });
-
-  const [authenticatedHeader, setAuthenticatedHeader] = useState({});
-  const [address, setAddress] = useState("");
-  const fallbackProvider = http(alchemyUrl);
-
-  const userInput = {
-    username: username,
-    userDisplayName: username,
-  };
-
-  async function authenticate() {
-    try {
-      await passport.setupEncryption();
-      const [authenticatedHeader, address] = await passport.authenticate(
-        userInput
-      );
-      setAuthenticatedHeader(authenticatedHeader);
-      setAddress(address);
-      setAuthenticated(true);
-    } catch (error) {
-      console.error("Error registering:", error);
-    }
-  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-200">
@@ -153,15 +112,15 @@ export default function Home() {
               className="border border-1 rounded p-2 border-gray-400 w-full  text-gray-900"
               onClick={async () => {
                 try {
-                  const res = await fetch("/api/get-smart-account", {
+                  const response = await fetch("/api/get-smart-account", {
                     method: "GET",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
                   });
-                  alert(JSON.stringify(res));
-                } catch (e) {
-                  alert(e);
+
+                  if (response.ok) {
+                    alert(await response.json());
+                  }
+                } catch (error) {
+                  alert(error);
                 }
               }}
             >
